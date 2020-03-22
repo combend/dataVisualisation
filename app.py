@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
 import requests, csv, datetime
-import numpy as np
 from bokeh.plotting import figure
 from bokeh.embed import components
+from bokeh.models import DatetimeTickFormatter
 
 app = Flask(__name__)
 app.secret_key = "super secret"
@@ -11,13 +11,13 @@ bootstrap = Bootstrap(app)
 
 @app.route('/')
 @app.route('/index')
-def home():
+def index():
     file = "time_series_19-covid-Confirmed.csv"
     routeURL =  "http://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/" + file
     print(routeURL)
     response = requests.get(routeURL)
     if response.status_code != 200:
-        print("Couldn't get data") #todo: Handle bad response
+        print("Couldn't get data") #todo: Handle non OK response
     else:
         regionCases = {}
         data = csv.reader(response.text.strip().split('\n'))
@@ -39,10 +39,9 @@ def home():
         plot.line(x, regionCases["Northern Territory"], legend_label="Northern Territory", line_color="black")
         plot.line(x, regionCases["Tasmania"], legend_label="Tasmania", line_color="green")
         plot.line(x, regionCases["South Australia"], legend_label="South Australia", line_color="red")
-    script, div = components(plot)
-    kwargs = {'script': script, 'div': div}
-    return render_template('home.html', **kwargs)
-
+        plot.xaxis.formatter=DatetimeTickFormatter(days = "%d/%m/%y")
+        script, div = components(plot)
+        return render_template('index.html', script=script, div=div)
 
 @app.route('/about')
 def contact():
