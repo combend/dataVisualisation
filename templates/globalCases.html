@@ -1,9 +1,9 @@
 {%  extends 'base.html' %}
-{% block page_title %} Australian Cases {% endblock %}
+{% block page_title %} Home {% endblock %}
 {% block page_content %}
     <div class="container-fluid">
         <p>
-           COVID-19 info...
+           Currently worldwide there are {{ global_cases }} cases of COVID-19.
         </p>
     </div>
     <div class = "container-fluid">
@@ -19,23 +19,10 @@
                     rel="stylesheet" type="text/css">
         </head>
         <body>
-        <form action = "/updateStates" method = "POST" >
-            <div class="container">
-                <div class="btn-group" data-toggle="buttons">
-                     {% for button in buttons %}
-                        <label class="btn btn-primary">
-                        <input type="checkbox" name="states" id="{{button}}" value="{{ button }}">{{ button }}
-                        </label>
-                    {% endfor %}
-
-
-                </div>
-
-            </div>
-            <input type="submit">
-        </form>
+            <div align = "center">
             {{ div | safe}}
             {{ script | safe}}
+            </div>
         </body>
         <script src='https://cdnjs.cloudflare.com/ajax/libs/bokeh/2.0.1/bokeh.min.js'></script>
         <script src='https://cdnjs.cloudflare.com/ajax/libs/bokeh/2.0.1/bokeh-widgets.js'></script>

@@ -1,51 +1,78 @@
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
-import requests, csv, datetime
+
+import dataProcessing, countryInfo
 from bokeh.plotting import figure
 from bokeh.embed import components
 from bokeh.models import DatetimeTickFormatter
+
+
+from math import pi
+import pandas as pd
+from bokeh.palettes import Turbo256
+from bokeh.transform import cumsum
 
 app = Flask(__name__)
 app.secret_key = "super secret"
 bootstrap = Bootstrap(app)
 
+
+@app.route('/updateStates', methods=['GET', 'POST'])
+def updateStates():
+    if request.method == 'POST':
+        return index(request.form.getlist('states'))
+
+
 @app.route('/')
-@app.route('/index')
-def index():
-    file = "time_series_19-covid-Confirmed.csv"
-    routeURL =  "http://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/" + file
-    print(routeURL)
-    response = requests.get(routeURL)
-    if response.status_code != 200:
-        print("Couldn't get data") #todo: Handle non OK response
-    else:
-        regionCases = {}
-        data = csv.reader(response.text.strip().split('\n'))
-        dates =  next(data)[4:]
-        for row in data:
-            if row[0]:
-                regionCases[row[0]] = [int(x) for x in row[4:]]
-        x = [datetime.datetime.strptime(date, '%m/%d/%y') for date in dates]
-        plot = figure(plot_height=600, sizing_mode='stretch_width',
-                      title="COVID-19 - Confirmed cases",
-                      x_axis_label="Date", x_axis_type='datetime',
-                      y_axis_label="Cases",
-                      toolbar_location="above")
-        plot.line(x, regionCases["New South Wales"], legend_label = "New South Wales", line_color="skyblue")
-        plot.line(x, regionCases["Queensland"], legend_label="Queensland", line_color="maroon")
-        plot.line(x, regionCases["Victoria"], legend_label="Victoria", line_color="silver")
-        plot.line(x, regionCases["Australian Capital Territory"], legend_label="Australian Capital Territory", line_color="blue")
-        plot.line(x, regionCases["Western Australia"], legend_label="Western Australia", line_color="yellow")
-        plot.line(x, regionCases["Northern Territory"], legend_label="Northern Territory", line_color="black")
-        plot.line(x, regionCases["Tasmania"], legend_label="Tasmania", line_color="green")
-        plot.line(x, regionCases["South Australia"], legend_label="South Australia", line_color="red")
-        plot.xaxis.formatter=DatetimeTickFormatter(days = "%d/%m/%y")
-        script, div = components(plot)
-        return render_template('index.html', script=script, div=div)
+@app.route('/index', methods=['GET', 'POST'])
+def index(chosen_states=[]):
+    dates, cases, global_cases = dataProcessing.collect_data()
+    plot = figure(plot_height=600, sizing_mode='stretch_width',
+                  title="COVID-19 - Confirmed cases",
+                  x_axis_label="Date", x_axis_type='datetime',
+                  y_axis_label="Cases",
+                  toolbar_location="above")
+    for state in countryInfo.aus_states:
+        if state in chosen_states:
+            plot.line(dates, cases['Australia'][state]['case_history'], legend_label=state,
+                      line_color=countryInfo.aus_states[state])
+    plot.xaxis.formatter = DatetimeTickFormatter(days="%d/%m/%y")
+    script, div = components(plot)
+    states = countryInfo.aus_states.keys()
+    return render_template('index.html', buttons=states, script=script, div=div)
+
+@app.route('/globalCases')
+def global_cases_summary():
+    x, global_cases = dataProcessing.country_cases()
+
+    data = pd.Series(x).reset_index(name='value').rename(columns={'index': 'country'})
+    data['angle'] = data['value'] / data['value'].sum() * 2 * pi
+    data['color'] = Turbo256[:len(x)]
+
+    p = figure(plot_height=800, sizing_mode='scale_height', aspect_ratio = 2,
+               title="Global confirmed cases", toolbar_location=None,
+               tools="hover", tooltips="@country: @value", x_range=(-0.5, 1.0))
+
+    p.wedge(x=0, y=1, radius=0.3,
+            start_angle=cumsum('angle', include_zero=True), end_angle=cumsum('angle'),
+            line_color="white", fill_color='color', legend_field='country', source=data)
+
+    p.axis.axis_label = None
+    p.axis.visible = False
+    p.grid.grid_line_color = None
+    script, div = components(p)
+    return render_template('globalCases.html', script=script, div=div, global_cases = global_cases)
 
 @app.route('/about')
-def contact():
+def about():
     return render_template('about.html')
+
+@app.route('/heatMap')
+def heatMap():
+    dates, cases, global_cases = dataProcessing.collect_data()
+    state_cases_info = dataProcessing.state_cases()
+    print(state_cases_info)
+    return render_template('heatMap.html', cases_info = state_cases_info)
 
 
 @app.errorhandler(404)
