@@ -12,20 +12,18 @@ import pandas as pd
 from bokeh.palettes import Turbo256
 from bokeh.transform import cumsum
 
+
 app = Flask(__name__)
 app.secret_key = "super secret"
 bootstrap = Bootstrap(app)
 
 
-@app.route('/updateStates', methods=['GET', 'POST'])
-def updateStates():
-    if request.method == 'POST':
-        return index(request.form.getlist('states'))
-
-
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
-def index(chosen_states=[]):
+def index():
+    chosen_states = ['New South Wales']
+    if request.method == 'POST':
+        chosen_states = request.form.getlist('states')
     dates, cases, global_cases = dataProcessing.collect_data()
     plot = figure(plot_height=600, sizing_mode='stretch_width',
                   title="COVID-19 - Confirmed cases",
@@ -37,6 +35,7 @@ def index(chosen_states=[]):
             plot.line(dates, cases['Australia'][state]['case_history'], legend_label=state,
                       line_color=countryInfo.aus_states[state])
     plot.xaxis.formatter = DatetimeTickFormatter(days="%d/%m/%y")
+    plot.legend.location = "top_left"
     script, div = components(plot)
     states = countryInfo.aus_states.keys()
     return render_template('index.html', buttons=states, script=script, div=div)
@@ -71,7 +70,6 @@ def about():
 def heatMap():
     dates, cases, global_cases = dataProcessing.collect_data()
     state_cases_info = dataProcessing.state_cases()
-    print(state_cases_info)
     return render_template('heatMap.html', cases_info = state_cases_info)
 
 

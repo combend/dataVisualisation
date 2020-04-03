@@ -1,29 +1,34 @@
 {%  extends "base.html" %}
-{% block page_title %} Page not found{% endblock %}
+{% block page_title %} Heat map {% endblock %}
 {% block page_content %}
-    <head>
-        <meta charset="utf-8" />
-        <script type='text/javascript'>
+    <body>
+        <div id='myMap' style='width: 100vw; height: 100vh;'></div>
+         <script type='text/javascript'>
             function GetMap() {
-                var map = new Microsoft.Maps.Map('#myMap', {
-                    credentials: 'Akrs8YwhB7gOgLr69CJLgIA7p7TP_Xbc6AZzUqILS8s3g3zZnifO_7dWyx7abPMy'
+                var map = new Microsoft.Maps.Map(document.getElementById('myMap'), {
+
+                    zoom: 3
                 });
-                //Load the HeatMap module.
                 Microsoft.Maps.loadModule('Microsoft.Maps.HeatMap', function () {
-                {% for state in cases_info %}
-                    var r = {{ cases_info[state]['case_history'][-1] * 100 }}
-                    var heatmap = new Microsoft.Maps.HeatMapLayer(new Microsoft.Maps.Location({{cases_info[state]['lat']}}, {{cases_info[state]['long']}}), {
-                       
+                    var mapDiv = map.getRootElement();
+                    var locations = [];
+                    {% for state in cases_info  %}
+                        {% for i in range(cases_info[state]['case_history'][-1]) %}
+                            var randomLocation = new Microsoft.Maps.Location({{ cases_info[state]['lat'] }}, {{ cases_info[state]['long'] }});
+                            locations.push(randomLocation);
+                        {%  endfor %}
+                    {% endfor %}
+
+                    var heatMap = new Microsoft.Maps.HeatMapLayer(locations, {
+                        intensity: 1,
+                        radius: 200,
+                        aggregateLocationWeights: true
                     });
-                    map.layers.insert(heatmap);
-                {% endfor %}
+                    map.layers.insert(heatMap);
                 });
             }
         </script>
-        <script type='text/javascript' src='http://www.bing.com/api/maps/mapcontrol?callback=GetMap' async defer></script>
-    </head>
-    <body>
-        <div id="myMap" style="position:relative;width:600px;height:400px;"></div>
+        <script type='text/javascript' src='https://www.bing.com/api/maps/mapcontrol?key=Akrs8YwhB7gOgLr69CJLgIA7p7TP_Xbc6AZzUqILS8s3g3zZnifO_7dWyx7abPMy&callback=GetMap' async defer></script>
     </body>
 {% endblock %}
 

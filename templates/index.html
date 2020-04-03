@@ -19,21 +19,19 @@
                     rel="stylesheet" type="text/css">
         </head>
         <body>
-        <form action = "/updateStates" method = "POST" >
-            <div class="container">
-                <div class="btn-group" data-toggle="buttons">
-                     {% for button in buttons %}
-                        <label class="btn btn-primary">
-                        <input type="checkbox" name="states" id="{{button}}" value="{{ button }}">{{ button }}
-                        </label>
-                    {% endfor %}
-
-
+            <form action = "/" method = "POST" >
+                <div class="container">
+                    <div class="btn-group" data-toggle="buttons">
+                         {% for button in buttons %}
+                            <label class="btn btn-primary">
+                            <input type="checkbox" name="states" id="{{button}}" value="{{ button }}">{{ button }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <input type="submit">
                 </div>
 
-            </div>
-            <input type="submit">
-        </form>
+            </form>
             {{ div | safe}}
             {{ script | safe}}
         </body>
